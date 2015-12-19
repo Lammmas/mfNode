@@ -1,0 +1,27 @@
+{
+  "name": "mf-node",
+  "version": "0.0.1",
+  "private": true,
+  "description": "MyFitness app's Node.js backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lammmas/mfNode.git"
+  },
+  "keywords": [
+    "node",
+    "myfitness"
+  ],
+  "author": "Renna Reemet",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Lammmas/mfNode/issues"
+  },
+  "homepage": "https://github.com/Lammmas/mfNode#readme",
+  "dependencies": {
+    "firebase": "^2.3.2"
+  }
+}
