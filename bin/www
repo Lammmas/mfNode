@@ -8,11 +8,6 @@ var app = require('../app');
 var debug = require('debug')('debug');
 var http = require('http');
 
-//var fbUsers = app.fb.child('users');
-//var fbClasses = app.fb.child('classes');
-//var fbRegistrations = app.fb.child('registrations');
-//var fbLocations = app.fb.child('locations');
-
 /**
  * Get port from environment and store in Express.
  */

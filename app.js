@@ -1,3 +1,4 @@
+var flash = require('connect-flash');
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -11,12 +12,9 @@ var helmet = require('helmet');
 var config = require('app-config');
 var csrf = require('csurf');
 var compression = require('compression');
-var Firebase = require('firebase');
 
 var client = redis.createClient();
 var app = express();
-
-var routes = require('./controllers/index');
 
 app.config = config;
 
@@ -33,9 +31,23 @@ app.use(cookieParser(app.config.web.secret));
 app.set('trust proxy', 1); // trust first proxy
 app.use(session(
     {
+        cookie: {
+            path: '/',
+            httpOnly: true,
+            //secure: true,
+            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+            signed: false
+        },
         secret: app.config.web.secret,
         name: 'sess',
         store: new redisStore({ host: 'localhost', port: 6379, client: client }),
+        /*
+        store: new mongoStore({
+            url: 'mongodb://' + app.config.db.mongo.user + ':' + app.config.db.mongo.password + '@' +
+            app.config.db.mongo.url + '?authSource=admins&w=1'
+            ttl: 14 * 24 * 60 * 60, // = 14 days
+            touchAfter: 24 * 3600 // time period in seconds to refresh the session data if nothing is changeds
+        }),*/
         saveUninitialized: false, // don't create session until something stored,
         resave: false // don't save session if unmodified
     }
@@ -43,8 +55,6 @@ app.use(session(
 app.use(logger("tiny"));
 app.use(helmet());
 app.use(compression({}));
-
-app.fb = new Firebase(app.config.db.url);
 app.csrf = csrf({});
 /*
  app.use(function (err, req, res, next) {
@@ -56,38 +66,29 @@ app.csrf = csrf({});
  })
  */
 
-app.use('/', routes);
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
+app.use(require('connect-flash')());
+app.use(function (req, res, next) {
+    res.locals.messages = require('express-messages')(req, res);
+    next();
 });
 
-// error handlers
+// routes
+app.use('/', require('./controllers/public'));
+app.use('/api', require('./controllers/api'));
 
 // development error handler
 // will print stacktrace
-if (app.get('env') === 'development') {
-  app.use(function(err, req, res, next) {
-    res.status(err.status || 500);
-    res.render('error', {
-      message: err.message,
-      error: err
+if (app.get('env') === 'dev') {
+    app.use(function(err, req, res, next) {
+        res.status(err.status || 500);
+        res.render('error', {
+            message: err.message,
+            error: err
+        });
     });
-  });
 }
 
-// production error handler
-// no stacktraces leaked to user
-app.use(function(err, req, res, next) {
-  res.status(err.status || 500);
-  res.render('error', {
-    message: err.message,
-    error: {}
-  });
-});
+// error handlers
+app.use(require('./middleware/errors'));
 
 module.exports = app;
-
