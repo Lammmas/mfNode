@@ -1,4 +1,4 @@
 module.exports = {
-    url: '',
+    url: 'https://mf-node.firebaseio.com/',
     secret: ''
 };
