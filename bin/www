@@ -4,13 +4,13 @@
  * Module dependencies.
  */
 
-var env = require('env.' + app.get('env'));
 var app = require('../app');
 var debug = require('debug')('mfNode:server');
 var http = require('http');
+var config = require('app-config');
 
 var Firebase = require('firebase');
-var fb = new Firebase(config.firebase.url);
+var fb = new Firebase(config.db.url);
 var fbUsers = fb.child('users');
 var fbClasses = fb.child('classes');
 var fbRegistrations = fb.child('registrations');
@@ -92,7 +92,7 @@ function onError(error) {
 function onListening() {
   var addr = server.address();
   var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
-  debug('Listening on ' + bind);
+    ? ' pipe ' + addr
+    : ':' + addr.port;
+  console.log('Listening on http://localhost' + bind);
 }
