@@ -1,4 +1,5 @@
 var express = require('express');
+var debug = require('debug')('public');
 var config = require('app-config');
 var router = express.Router();
 
@@ -19,22 +20,40 @@ router.route('/login')
             password: data.pass
         }, function(error, authData) {
             if (error) {
-                console.log("Login Failed!", error);
+                debug("Login Failed!", error);
                 res.redirect('/login');
             } else {
-                var user = {};
-                for (var attr in authData.password) { user[attr] = authData.password[attr]; }
-                for (var attr in authData.auth) { user[attr] = authData.password[attr]; }
-                user['token'] = authData.token;
+                var userId = authData.uid;
+                var user = {
+                    id: userId,
+                    email: authData.password.email,
+                    image: authData.password.profileImageURL,
+                    token: authData.token
+                };
 
                 req.session.user = user;
                 req.session.save();
+
+                // Check if user is already stored AKA this is not the first sign in
+                // TODO: replace with local version, ex. MongoDB or even a JSON file with user IDs
+                fb.child('users/' + userId).once('value', function(snapshot) {
+                    if (!snapshot.exists()) {
+                        fb.child('users/' + userId).set(user, function (err) {
+                            if (err !== null) console.log(err);
+                        });
+                    }
+                });
 
                 res.redirect('/api');
             }
         });
     }
 );
+
+router.get('/auth/:token', function (req, res) {
+    // TODO: Figure out RESTful auth
+    // Maybe could use the Token generated @ register to look up users to auth?
+});
 
 router.route('/register').get(function (req, res) {
         res.render('register');
@@ -48,28 +67,23 @@ router.route('/register').get(function (req, res) {
             password: data.pass
         }, function(error, userData) {
             if (error) {
-                console.log("Error creating user:", error);
+                switch (error.code) {
+                    case "EMAIL_TAKEN":
+                        debug("The new user account cannot be created because the email is already in use.");
+                        break;
+                    case "INVALID_EMAIL":
+                        debug("The specified email is not a valid email.");
+                        break;
+                    default:
+                        console.log("Error creating user:", error);
+                }
                 req.flash('error', error);
             } else {
-                console.log("Successfully created user account with uid:", userData.uid);
                 req.flash('success', 'Account created, you can now log in');
-
-                fb.child("users").child(userData.uid).set({
-                    provider: userData.provider,
-                    name: function (userData) {
-                        switch (userData.provider) {
-                            case 'password':
-                                return userData.password.email.replace(/@.*/, '');
-                            case 'google':
-                                return userData.google.displayName;
-                            case 'facebook':
-                                return userData.facebook.displayName;
-                        }
-                    }
-                });
+                // Automatic login achievable via Token generated from userData.uid
+                res.redirect('/login');
             }
 
-            res.redirect('/login');
         });
     }
 );
